@@ -36,7 +36,43 @@ def alpha_beta(board,computerTile,playerTile,flag,alpha,beta,depth):
                 alpha = Value
 
     return bestValue
-
+def mtd(board,computerTile,playerTile,flag,alpha,beta,test,depth):
+    bestValue = -1000000
+    while alpha < beta:
+        bestValue = alpha_beta(board,computerTile,playerTile,flag,test-1,test,depth)
+        if bestValue < test:
+            beta = bestValue
+            test = bestValue
+        else:
+            alpha = bestValue
+            test = bestValue + 1
+    return bestValue
+def pvs(board,computerTile,playerTile,flag,alpha,beta,depth):
+    bestValue = -1000000
+    if flag is True:
+        Tile = computerTile
+    else:
+        Tile = playerTile
+    possible = getValidMoves(board,Tile)
+    for x,y in possible:
+        copyBoard = getBoardCopy(board)
+        makeMove(copyBoard,Tile,x,y)
+        if depth <= 1:
+            Value = getEvaluationOfBoard(copyBoard)[Tile]
+        elif bestValue == -1000000:
+            Value = -pvs(copyBoard,computerTile,playerTile,not flag,-beta,-alpha,depth-1)
+        else:
+            Value = -pvs(copyBoard,computerTile,playerTile,not flag,-alpha-1,-alpha,depth-1)
+            if Value >alpha and Value < beta:
+                alpha = Value
+                Value = -pvs(copyBoard, computerTile, playerTile, not flag, -beta, -alpha, depth - 1)
+        if Value >= beta:
+            return Value
+        if Value > bestValue:
+            bestValue = Value
+            if Value > alpha:
+                alpha = Value
+    return bestValue
 # 退出
 def terminate():
     pygame.quit()
@@ -209,25 +245,19 @@ def getComputerMove(board, computerTile):
     for x, y in possibleMoves:
         if isOnCorner(x, y):
             return [x, y]
-    bestScore = -100000000
+    bestScore = -1
     for x, y in possibleMoves:
         dupeBoard = getBoardCopy(board)
         makeMove(dupeBoard, computerTile, x, y)
         #score = getScoreOfBoard(dupeBoard)[computerTile]
-        score = alpha_beta(dupeBoard,computerTile,playerTile,flag,-1000000,1000000,3)
+        #score = pvs(dupeBoard,computerTile,playerTile,flag,-1000000,1000000,3)
+        score = mtd(dupeBoard,computerTile,playerTile,flag,-1000000,1000000,10,3)
         sscore.append(score)
         print(sscore)
         if score > bestScore:
             bestMove = [x, y]
             bestScore = score
-    # for x, y in possibleMoves:
-    #     dupeBoard = getBoardCopy(board)
-    #     makeMove(dupeBoard, computerTile, x, y)
-    #     # 按照分数选择走法，优先选择翻转后分数最多的走法
-    #     score = getScoreOfBoard(dupeBoard)[computerTile]
-    #     if score > bestScore:
-    #         bestMove = [x, y]
-    #         bestScore = score
+
     return bestMove
 # 是否游戏结束
 
