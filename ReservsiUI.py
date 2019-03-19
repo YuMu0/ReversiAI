@@ -4,12 +4,12 @@ import numpy as np
 BACKGROUNDCOLOR = (255, 255, 255)
 BLACK = (255, 255, 255)
 BLUE = (0, 0, 255)
-CELLWIDTH = 80
-CELLHEIGHT = 80
+CELLWIDTH = 40
+CELLHEIGHT = 40
 PIECEWIDTH = 47
 PIECEHEIGHT = 47
-BOARDX = 55
-BOARDY = 55
+BOARDX = 2
+BOARDY = 2
 FPS = 40
 # alpha_beta减枝
 # 传进来如果flag是True 那么就是computer下
@@ -204,8 +204,6 @@ def whoGoesFirst():
     #     return 'player'
 
 # 将一个tile棋子放到(xstart, ystart)，返回True或False，并在board中修改值
-
-
 def makeMove(board, tile, xstart, ystart):
     tilesToFlip = isValidMove(board, tile, xstart, ystart)
 
@@ -220,7 +218,6 @@ def makeMove(board, tile, xstart, ystart):
     return True
 
 # 复制棋盘
-
 def getBoardCopy(board):
     dupeBoard = getNewBoard()
     for x in range(8):
@@ -230,13 +227,10 @@ def getBoardCopy(board):
     return dupeBoard
 
 # 是否在角上
-
 def isOnCorner(x, y):
     return (x == 0 and y == 0) or (x == 7 and y == 0) or (x == 0 and y == 7) or (x == 7 and y == 7)
 
-
 # 电脑走法，AI，返回最佳走法的坐标
-
 def getComputerMove(board, computerTile):
     # 获取所以合法走法
     flag = True
