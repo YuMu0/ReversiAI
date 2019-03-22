@@ -85,6 +85,10 @@ def resetBoard(board):
         for y in range(8):
             board[x][y] = 'none'
     # Starting pieces:
+    # board[4][4] = 'black'
+    # board[4][5] = 'white'
+    # board[5][4] = 'white'
+    # board[5][5] = 'black'
     board[3][3] = 'black'
     board[3][4] = 'white'
     board[4][3] = 'white'
@@ -174,7 +178,7 @@ def getEvaluationOfBoard(board):
                 BoardBlack[x][y] = 1
             if board[x][y] == 'white':
                 BoardWhite[x][y] = 1
-    # #
+
     # print(BoardWhite,end='**************')
     # print(BoardBlack,end='$$$$$$$$$$$$$$$$$$$')
     BoardBlack = BoardBlack * Vmap
@@ -273,7 +277,7 @@ def isGameOver(board):
 def drawTile(board):
     for x in range(8):
         for y in range(8):
-            rectDst = pygame.Rect(BOARDX + x * CELLWIDTH + 2, BOARDY + y * CELLHEIGHT + 2, PIECEWIDTH, PIECEHEIGHT)
+            rectDst = pygame.Rect(BOARDX + (x+1) * CELLWIDTH + 2, BOARDY + (y+1) * CELLHEIGHT + 2, PIECEWIDTH, PIECEHEIGHT)
             if mainBoard[x][y] == 'black':
                 windowSurface.blit(blackImage, rectDst, blackRect)
             elif mainBoard[x][y] == 'white':
@@ -315,7 +319,7 @@ def drawWhosTurn(board,tile):
 pygame.init()
 mainClock = pygame.time.Clock()
 # 加载图片
-boardImage = pygame.image.load('board.png')
+boardImage = pygame.image.load('board.jpg')
 boardRect = boardImage.get_rect()
 blackImage = pygame.image.load('black.png')
 blackRect = blackImage.get_rect()
@@ -345,17 +349,23 @@ windowSurface = pygame.display.set_mode((boardRect.width, boardRect.height+100))
 pygame.display.set_caption('黑白棋')
 gameOver = False
 # 游戏主循环
+
+# validMoves = [[3,5],[4,6],[5,3],[6,4]]
 validMoves = [[2,4],[3,5],[4,2],[5,3]]
 
 while True:
+
     for event in pygame.event.get():
         if event.type == QUIT:
             terminate()
         if gameOver == False and turn == 'player' and event.type == MOUSEBUTTONDOWN and event.button == 1:
             x, y = pygame.mouse.get_pos()
 
-            col = int((x - BOARDX) / CELLWIDTH)
-            row = int((y - BOARDY) / CELLHEIGHT)
+
+            col = int((x - BOARDX) / CELLWIDTH) - 1
+            row = int((y - BOARDY) / CELLHEIGHT) - 1
+
+            print(row,col)
 
             if makeMove(mainBoard, playerTile, col, row) == True:
                 validMoves = getValidMoves(mainBoard, computerTile)
@@ -363,6 +373,7 @@ while True:
                     turn = 'computer'
     windowSurface.fill(BACKGROUNDCOLOR)
     windowSurface.blit(boardImage, boardRect, boardRect)
+
     drawWhosTurn(mainBoard,turn)
     drawValidMoves(validMoves)
     drawTile(mainBoard)
@@ -370,6 +381,7 @@ while True:
     # windowSurface.blit(boardImage, boardRect, boardRect)
 
     if isGameOver(mainBoard) or gameOver is True:
+
         drawGameOver(mainBoard)
 
     #刷新显示与计时
@@ -387,6 +399,7 @@ while True:
             else:
                 gameOver = True
         time.sleep(1)
+
         makeMove(mainBoard, computerTile, x, y)
 
         # 玩家有可行的走法
