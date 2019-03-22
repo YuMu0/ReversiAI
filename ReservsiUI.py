@@ -85,6 +85,10 @@ def resetBoard(board):
         for y in range(8):
             board[x][y] = 'none'
     # Starting pieces:
+    # board[4][4] = 'black'
+    # board[4][5] = 'white'
+    # board[5][4] = 'white'
+    # board[5][5] = 'black'
     board[3][3] = 'black'
     board[3][4] = 'white'
     board[4][3] = 'white'
@@ -175,8 +179,8 @@ def getEvaluationOfBoard(board):
             if board[x][y] == 'white':
                 BoardWhite[x][y] = 1
 
-    print(BoardWhite,end='**************')
-    print(BoardBlack,end='$$$$$$$$$$$$$$$$$$$')
+    # print(BoardWhite,end='**************')
+    # print(BoardBlack,end='$$$$$$$$$$$$$$$$$$$')
     BoardBlack = BoardBlack * Vmap
     BoardWhite = BoardWhite * Vmap
     BlackValue = np.sum(BoardBlack)
@@ -193,7 +197,6 @@ def getScoreOfBoard(board):
             if board[x][y] == 'white':
                 oscore += 1
     return {'black': xscore, 'white': oscore}
-
 
 # 谁先走，返回turn
 def whoGoesFirst():
@@ -258,7 +261,6 @@ def getComputerMove(board, computerTile):
 
     return bestMove
 
-
 # 是否游戏结束
 
 def isGameOver(board):
@@ -273,7 +275,7 @@ def isGameOver(board):
 def drawTile(board):
     for x in range(8):
         for y in range(8):
-            rectDst = pygame.Rect(BOARDX + x * CELLWIDTH + 2, BOARDY + y * CELLHEIGHT + 2, PIECEWIDTH, PIECEHEIGHT)
+            rectDst = pygame.Rect(BOARDX + (x+1) * CELLWIDTH + 2, BOARDY + (y+1) * CELLHEIGHT + 2, PIECEWIDTH, PIECEHEIGHT)
             if mainBoard[x][y] == 'black':
                 windowSurface.blit(blackImage, rectDst, blackRect)
             elif mainBoard[x][y] == 'white':
@@ -282,7 +284,7 @@ def drawTile(board):
 # 画出能够落子的位置，无返回值
 def drawValidMoves(validmoves):
     for [x,y] in validMoves:
-        rectDst = pygame.Rect(BOARDX + x * CELLWIDTH + 2, BOARDY + y * CELLHEIGHT + 2, PIECEWIDTH, PIECEHEIGHT)
+        rectDst = pygame.Rect(BOARDX + (x+1) * CELLWIDTH + 2, BOARDY + (y+1) * CELLHEIGHT + 2, PIECEWIDTH, PIECEHEIGHT)
         windowSurface.blit(chooseImage, rectDst, chooseRect)
 
 #游戏结束时的界面显示
@@ -296,11 +298,24 @@ def drawGameOver(board):
     textRect.centery = windowSurface.get_rect().centery
     windowSurface.blit(text, textRect)
 
+def drawGameScore(board,turn):
+    scorePlayer = getScoreOfBoard(board)[playerTile]
+    scoreComputer = getScoreOfBoard(board)[computerTile]
+    turnStr = "It is " + turn + " 's turn"
+    scoreStr = "Player vs Computer   " + str(scorePlayer) + " : " + str(scoreComputer)
+
+    turnText = basicFont.render(turnStr, True, BLACK, BLUE)
+    scoreText = basicFont.render(scoreStr, True, BLACK, BLUE)
+    turnText.get_rect().centerx = 1000
+    turnText.get_rect().centery = 500
+    windowSurface.blit(turnText, turnText.get_rect())
+    print(turnText.get_rect().centerx)
+
 # 初始化
 pygame.init()
 mainClock = pygame.time.Clock()
 # 加载图片
-boardImage = pygame.image.load('board.png')
+boardImage = pygame.image.load('board.jpg')
 boardRect = boardImage.get_rect()
 blackImage = pygame.image.load('black.png')
 blackRect = blackImage.get_rect()
@@ -330,6 +345,7 @@ windowSurface = pygame.display.set_mode((boardRect.width, boardRect.height))
 pygame.display.set_caption('黑白棋')
 gameOver = False
 # 游戏主循环
+# validMoves = [[3,5],[4,6],[5,3],[6,4]]
 validMoves = [[2,4],[3,5],[4,2],[5,3]]
 
 while True:
@@ -340,8 +356,10 @@ while True:
         if gameOver == False and turn == 'player' and event.type == MOUSEBUTTONDOWN and event.button == 1:
             x, y = pygame.mouse.get_pos()
 
-            col = int((x - BOARDX) / CELLWIDTH)
-            row = int((y - BOARDY) / CELLHEIGHT)
+            col = int((x - BOARDX) / CELLWIDTH) - 1
+            row = int((y - BOARDY) / CELLHEIGHT) - 1
+
+            print(row,col)
 
             if makeMove(mainBoard, playerTile, col, row) == True:
                 validMoves = getValidMoves(mainBoard, computerTile)
@@ -352,6 +370,7 @@ while True:
 
     drawValidMoves(validMoves)
     drawTile(mainBoard)
+    # drawGameScore(mainBoard,turn)
     # windowSurface.fill(BACKGROUNDCOLOR)
     # windowSurface.blit(boardImage, boardRect, boardRect)
 
