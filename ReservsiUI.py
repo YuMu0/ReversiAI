@@ -11,12 +11,133 @@ PIECEHEIGHT = 47
 BOARDX = 2
 BOARDY = 2
 FPS = 40
-DEPTH = 5
+
+INF_VALUE = 1000000
+iteration_depth = 5
+HASHMAP_SIZE = 8
+
+def getNewZobrist():
+    board = []
+    for i in range(8):
+        board.append([random.randint(0,2**HASHMAP_SIZE - 1) for i in range(8)])
+    return board
+
+def get_hashcode(hashcode,board,tile):
+    for i in range(8):
+        for j in range(8):
+            if board[i][j] == 'black':
+                hashcode ^= zobrist_black[i][j]
+            elif board[i][j] == 'white':
+                hashcode ^= zobrist_white[i][j]
+
+    if tile == 'white':
+        hashcode ^= zobrist_swap_player[0]
+    else:
+        hashcode ^= zobrist_swap_player[1]
+    return hashcode
+class Hashtable_Node:
+    lower = -INF_VALUE
+    upper = INF_VALUE
+    bestmove = [0,0]
+    depth = 0
+class Hashtable:
+    lock = 0
+    deepest = Hashtable_Node()
+    newest = Hashtable_Node()
+
+hashmap = {}
+
+zobrist_white = getNewZobrist()
+zobrist_black = getNewZobrist()
+zobrist_swap_player = [random.randint(0, 2 ** HASHMAP_SIZE - 1), random.randint(0, 2 ** HASHMAP_SIZE - 1)]
+
+
+def hash_update(hashcode,lower,upper,bestmove,depth):
+    p = hashmap.get(hashcode)
+    if depth == p.deepest.depth :
+        if lower > p.deepest.lower:
+            p.deepest.lower = lower
+            p.deepest.bestmove = bestmove
+        if upper < p.deepest.upper:
+            p.deepest.upper = upper
+    elif depth == p.newest.depth:
+        if lower > p.newest.lower:
+            p.newest.lower = lower
+            p.newest.bestmove = bestmove
+        if upper < p.newest.upper:
+            p.newest.upper = upper
+    elif depth > p.deepest.depth:
+        p.newest.lower = p.deepest.lower
+        p.newest.upper = p.deepest.upper
+        p.newest.bestmove = p.deepest.bestmove
+        p.newest.depth = p.deepest.depth
+
+        p.deepest.lower = lower
+        p.deepest.upper = upper
+        p.deepest.bestmove = bestmove
+        p.deepest.depth = depth
+
+def hash_get(p,depth):
+    if depth == p.deepest.depth:
+        return p.deepest
+    elif depth == p.newest.depth:
+        return p.newest
+    else:
+        return None
+
+def alpha_beta_with_hashtable(board,computerTile,playerTile,flag,alpha,beta,depth):
+    if flag is True:
+        Tile = computerTile
+    else:
+        Tile = playerTile
+    hashcode = 0
+    hashcode = get_hashcode(hashcode,board,Tile)
+    bestmove = []
+    p = hashmap.get(hashcode)
+
+    if p is not None :
+        global find_number
+        find_number += 1
+        # print('find number is %d***********'%find_number)
+        node = hash_get(p, current_depth + iteration_depth - depth)
+        if node is not None:
+            if node.lower > alpha:
+                alpha = node.lower
+                if alpha >= beta:
+                    return alpha
+            if node.upper < beta:
+                beta = node.upper
+                if beta <= alpha:
+                    return beta
+    else:
+        global non_find_number
+        non_find_number += 1
+        # print('not find number is %d$$$$$$$$' % non_find_number)
+        newTable = Hashtable()
+        newTable.lock = hashcode
+        hashmap[hashcode] = newTable
+        # print('hash map size is %d??????????' %len(hashmap))
+
+    temp = alpha_beta(board,computerTile,playerTile,flag,alpha,beta,depth)
+    if isinstance(temp,float) or isinstance(temp,int):
+        best_value = temp
+    else:
+        best_value = temp[0]
+        bestmove = temp[1]
+    if best_value >= beta:
+        hash_update(hashcode, best_value, INF_VALUE, bestmove, current_depth + iteration_depth - depth)
+    elif best_value <= alpha:
+        hash_update(hashcode, -INF_VALUE, best_value, bestmove, current_depth + iteration_depth - depth)
+    else:
+        hash_update(hashcode, best_value, best_value, bestmove, current_depth + iteration_depth - depth)
+    return best_value
+
 # alpha_beta减枝
 # 传进来如果flag是True 那么就是computer下
 #传进来flag为false 那么就是player下
 def alpha_beta(board,computerTile,playerTile,flag,alpha,beta,depth):
-    bestValue = -1000000
+    bestValue = -INF_VALUE
+    bestMove = []
     if flag is True:
         Tile = computerTile
     else:
@@ -28,30 +149,39 @@ def alpha_beta(board,computerTile,playerTile,flag,alpha,beta,depth):
         if depth <= 1:
             Value = getEvaluationOfBoard(copyBoard)[Tile]
         else:
-            Value = -alpha_beta(copyBoard,computerTile,playerTile,not flag,-beta,-alpha,depth-1)
+            temp = alpha_beta(copyBoard,computerTile,playerTile,not flag,-beta,-alpha,depth-1)
+            if isinstance(temp,float) or isinstance(temp,int):
+                Value = -temp
+            else:
+                Value = -temp[0]
         if Value >= beta:
             return Value
         if Value > bestValue:
             bestValue = Value
+            bestMove = [x,y]
             if Value > alpha:
                 alpha = Value
 
-    return bestValue
+    return bestValue,bestMove
 
 def mtd(board,computerTile,playerTile,flag,alpha,beta,test,depth):
-    bestValue = -1000000
+    bestValue = -INF_VALUE
     while alpha < beta:
-        bestValue = alpha_beta(board,computerTile,playerTile,flag,test-1,test,depth)
-        if bestValue < test:
-            beta = bestValue
-            test = bestValue
+        temp = alpha_beta(board,computerTile,playerTile,flag,test-1,test,depth)
+        if isinstance(temp, float):
+            bestValue = temp
         else:
-            alpha = bestValue
-            test = bestValue + 1
+            bestValue = temp[0]
+    if bestValue < test:
+        beta = bestValue
+        test = bestValue
+    else:
+        alpha = bestValue
+        test = bestValue + 1
     return bestValue
 
 def pvs(board,computerTile,playerTile,flag,alpha,beta,depth):
-    bestValue = -1000000
+    bestValue = -INF_VALUE
     if flag is True:
         Tile = computerTile
     else:
@@ -62,7 +192,7 @@ def pvs(board,computerTile,playerTile,flag,alpha,beta,depth):
         makeMove(copyBoard,Tile,x,y)
         if depth <= 1:
             Value = getEvaluationOfBoard(copyBoard)[Tile]
-        elif bestValue == -1000000:
+        elif bestValue == -INF_VALUE:
             Value = -pvs(copyBoard,computerTile,playerTile,not flag,-beta,-alpha,depth-1)
         else:
             Value = -pvs(copyBoard,computerTile,playerTile,not flag,-alpha-1,-alpha,depth-1)
@@ -89,10 +219,6 @@ def resetBoard(board):
         for y in range(8):
             board[x][y] = 'none'
     # Starting pieces:
-    # board[4][4] = 'black'
-    # board[4][5] = 'white'
-    # board[5][4] = 'white'
-    # board[5][5] = 'black'
     board[3][3] = 'black'
     board[3][4] = 'white'
     board[4][3] = 'white'
@@ -182,7 +308,7 @@ def getEvaluationOfBoard(board):
                 BoardBlack[x][y] = 1
             if board[x][y] == 'white':
                 BoardWhite[x][y] = 1
-
+    # #
     # print(BoardWhite,end='**************')
     # print(BoardBlack,end='$$$$$$$$$$$$$$$$$$$')
     BoardBlack = BoardBlack * Vmap
@@ -256,16 +382,20 @@ def getComputerMove(board, computerTile):
         dupeBoard = getBoardCopy(board)
         makeMove(dupeBoard, computerTile, x, y)
         #score = getScoreOfBoard(dupeBoard)[computerTile]
-        score = pvs(dupeBoard,computerTile,playerTile,flag,-1000000,1000000,DEPTH)
-        # score = mtd(dupeBoard,computerTile,playerTile,flag,-1000000,1000000,10,3)
+
+        # score = pvs(dupeBoard,computerTile,playerTile,flag,-INF_VALUE,INF_VALUE,iteration_depth)
+        # score = mtd(dupeBoard,computerTile,playerTile,flag,-INF_VALUE,INF_VALUE,10,iteration_depth)
+        score = alpha_beta_with_hashtable(dupeBoard,computerTile,playerTile,flag,-INF_VALUE,INF_VALUE,iteration_depth)
+
         # sscore.append(score)
         # print(sscore)
-        if score is not 1000000 and score > bestScore:
+        if score is not INF_VALUE and score > bestScore:
             bestMove = [x, y]
             bestScore = score
     if len(bestMove) == 0:
         for x, y in possibleMoves:
-            bestMove = [x, y]
+
+            bestMove = [x,y]
             break
 
     print(bestMove)
@@ -285,7 +415,7 @@ def isGameOver(board):
 def drawTile(board):
     for x in range(8):
         for y in range(8):
-            rectDst = pygame.Rect(BOARDX + (x+1) * CELLWIDTH + 2, BOARDY + (y+1) * CELLHEIGHT + 2, PIECEWIDTH, PIECEHEIGHT)
+            rectDst = pygame.Rect(BOARDX + x * CELLWIDTH + 2, BOARDY + y * CELLHEIGHT + 2, PIECEWIDTH, PIECEHEIGHT)
             if mainBoard[x][y] == 'black':
                 windowSurface.blit(blackImage, rectDst, blackRect)
             elif mainBoard[x][y] == 'white':
@@ -326,11 +456,12 @@ def drawWhosTurn(board,tile):
     textRect.centerx = windowSurface.get_rect().centerx
     textRect.centery = windowSurface.get_rect().centery + 210
     windowSurface.blit(text, textRect)
+
 # 初始化
 pygame.init()
 mainClock = pygame.time.Clock()
 # 加载图片
-boardImage = pygame.image.load('board.jpg')
+boardImage = pygame.image.load('board.png')
 boardRect = boardImage.get_rect()
 blackImage = pygame.image.load('black.png')
 blackRect = blackImage.get_rect()
@@ -360,39 +491,36 @@ windowSurface = pygame.display.set_mode((boardRect.width, boardRect.height+100))
 pygame.display.set_caption('黑白棋')
 gameOver = False
 # 游戏主循环
-
-# validMoves = [[3,5],[4,6],[5,3],[6,4]]
 validMoves = [[2,4],[3,5],[4,2],[5,3]]
-
+current_depth = 0
+find_number = 0
+non_find_number = 0
 while True:
-
     for event in pygame.event.get():
         if event.type == QUIT:
             terminate()
         if gameOver == False and turn == 'player' and event.type == MOUSEBUTTONDOWN and event.button == 1:
             x, y = pygame.mouse.get_pos()
 
-
-            col = int((x - BOARDX) / CELLWIDTH) - 1
-            row = int((y - BOARDY) / CELLHEIGHT) - 1
-
-            print(row,col)
+            col = int((x - BOARDX) / CELLWIDTH)
+            row = int((y - BOARDY) / CELLHEIGHT)
 
             if makeMove(mainBoard, playerTile, col, row) == True:
+                current_depth += 1
+                print(current_depth)
                 validMoves = getValidMoves(mainBoard, computerTile)
                 if validMoves != []:
                     turn = 'computer'
             else:
+
                 if getValidMoves(mainBoard, playerTile) == []:
                     if len(getComputerMove(mainBoard, computerTile)):
                         turn = 'computer'
                     else:
                         gameOver = True
 
-
     windowSurface.fill(BACKGROUNDCOLOR)
     windowSurface.blit(boardImage, boardRect, boardRect)
-
     drawWhosTurn(mainBoard,turn)
     drawValidMoves(validMoves)
     drawTile(mainBoard)
@@ -400,7 +528,6 @@ while True:
     # windowSurface.blit(boardImage, boardRect, boardRect)
 
     if isGameOver(mainBoard) or gameOver is True:
-
         drawGameOver(mainBoard)
 
     #刷新显示与计时
@@ -410,18 +537,20 @@ while True:
     mainClock.tick(FPS)
 
     if (gameOver == False and turn == 'computer'):
+
         temp = getComputerMove(mainBoard, computerTile)
         if len(temp):
             x, y = temp
+
         else:
             if getValidMoves(mainBoard, playerTile)!= []:
                 turn = 'player'
             else:
                 gameOver = True
         time.sleep(1)
-
         makeMove(mainBoard, computerTile, x, y)
-
+        current_depth += 1
+        print(current_depth)
         # 玩家有可行的走法
         validMoves = getValidMoves(mainBoard, playerTile)
         if validMoves != []:
