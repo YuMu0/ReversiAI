@@ -11,6 +11,7 @@ PIECEHEIGHT = 47
 BOARDX = 2
 BOARDY = 2
 FPS = 40
+DEPTH = 5
 # alpha_beta减枝
 # 传进来如果flag是True 那么就是computer下
 #传进来flag为false 那么就是player下
@@ -36,6 +37,7 @@ def alpha_beta(board,computerTile,playerTile,flag,alpha,beta,depth):
                 alpha = Value
 
     return bestValue
+
 def mtd(board,computerTile,playerTile,flag,alpha,beta,test,depth):
     bestValue = -1000000
     while alpha < beta:
@@ -47,6 +49,7 @@ def mtd(board,computerTile,playerTile,flag,alpha,beta,test,depth):
             alpha = bestValue
             test = bestValue + 1
     return bestValue
+
 def pvs(board,computerTile,playerTile,flag,alpha,beta,depth):
     bestValue = -1000000
     if flag is True:
@@ -73,6 +76,7 @@ def pvs(board,computerTile,playerTile,flag,alpha,beta,depth):
             if Value > alpha:
                 alpha = Value
     return bestValue
+
 # 退出
 def terminate():
     pygame.quit()
@@ -252,16 +256,20 @@ def getComputerMove(board, computerTile):
         dupeBoard = getBoardCopy(board)
         makeMove(dupeBoard, computerTile, x, y)
         #score = getScoreOfBoard(dupeBoard)[computerTile]
-        score = pvs(dupeBoard,computerTile,playerTile,flag,-1000000,1000000,3)
+        score = pvs(dupeBoard,computerTile,playerTile,flag,-1000000,1000000,DEPTH)
         # score = mtd(dupeBoard,computerTile,playerTile,flag,-1000000,1000000,10,3)
         # sscore.append(score)
         # print(sscore)
         if score is not 1000000 and score > bestScore:
             bestMove = [x, y]
             bestScore = score
+    if len(bestMove) == 0:
+        for x, y in possibleMoves:
+            bestMove = [x, y]
+            break
+
     print(bestMove)
     return bestMove
-
 
 # 是否游戏结束
 
@@ -286,7 +294,7 @@ def drawTile(board):
 # 画出能够落子的位置，无返回值
 def drawValidMoves(validmoves):
     for [x,y] in validMoves:
-        rectDst = pygame.Rect(BOARDX + x * CELLWIDTH + 2, BOARDY + y * CELLHEIGHT + 2, PIECEWIDTH, PIECEHEIGHT)
+        rectDst = pygame.Rect(BOARDX + (x+1) * CELLWIDTH + 2, BOARDY + (y+1) * CELLHEIGHT + 2, PIECEWIDTH, PIECEHEIGHT)
         windowSurface.blit(chooseImage, rectDst, chooseRect)
 
 #游戏结束时的界面显示
@@ -299,21 +307,24 @@ def drawGameOver(board):
     textRect.centerx = windowSurface.get_rect().centerx
     textRect.centery = windowSurface.get_rect().centery
     windowSurface.blit(text, textRect)
+
 def drawWhosTurn(board,tile):
+    myFont = pygame.font.SysFont("arial", 28)
+
     outstr = "it is " + tile + "'s turn"
-    text = basicFont.render(outstr, True, BLACK, BLUE)
+    text = myFont.render(outstr, True, (28,28,28))
     textRect = text.get_rect()
     textRect.centerx = windowSurface.get_rect().centerx
-    textRect.centery = windowSurface.get_rect().centery + 150
+    textRect.centery = windowSurface.get_rect().centery + 180
     windowSurface.blit(text, textRect)
 
     scorePlayer = getScoreOfBoard(board)[playerTile]
     scoreComputer = getScoreOfBoard(board)[computerTile]
-    outputStr = "Player vs Computer  " + str(scorePlayer) + ":" + str(scoreComputer)
-    text = basicFont.render(outputStr, True, BLACK, BLUE)
+    outputStr = "Player vs Computer:  " + str(scorePlayer) + "-" + str(scoreComputer)
+    text = myFont.render(outputStr, True, (139,69,19))
     textRect = text.get_rect()
     textRect.centerx = windowSurface.get_rect().centerx
-    textRect.centery = windowSurface.get_rect().centery + 180
+    textRect.centery = windowSurface.get_rect().centery + 210
     windowSurface.blit(text, textRect)
 # 初始化
 pygame.init()
@@ -371,6 +382,14 @@ while True:
                 validMoves = getValidMoves(mainBoard, computerTile)
                 if validMoves != []:
                     turn = 'computer'
+            else:
+                if getValidMoves(mainBoard, playerTile) == []:
+                    if len(getComputerMove(mainBoard, computerTile)):
+                        turn = 'computer'
+                    else:
+                        gameOver = True
+
+
     windowSurface.fill(BACKGROUNDCOLOR)
     windowSurface.blit(boardImage, boardRect, boardRect)
 
@@ -391,8 +410,9 @@ while True:
     mainClock.tick(FPS)
 
     if (gameOver == False and turn == 'computer'):
-        if len(getComputerMove(mainBoard, computerTile)):
-            x, y = getComputerMove(mainBoard, computerTile)
+        temp = getComputerMove(mainBoard, computerTile)
+        if len(temp):
+            x, y = temp
         else:
             if getValidMoves(mainBoard, playerTile)!= []:
                 turn = 'player'
