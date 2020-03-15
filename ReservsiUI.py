@@ -130,8 +130,8 @@ def alpha_beta_with_hashtable(board,computerTile,playerTile,flag,alpha,beta,dept
     else:
         hash_update(hashcode, best_value, best_value, bestmove, current_depth + iteration_depth - depth)
     return best_value
-# alpha_beta减枝
-# 传进来如果flag是True 那么就是computer下
+# alpha_beta减枝算法
+#传进来如果flag是True 那么就是computer下
 #传进来flag为false 那么就是player下
 def alpha_beta(board,computerTile,playerTile,flag,alpha,beta,depth):
     bestValue = -INF_VALUE
@@ -213,14 +213,13 @@ def resetBoard(board):
     for x in range(8):
         for y in range(8):
             board[x][y] = 'none'
-    # Starting pieces:
+    #初始布局:
     board[3][3] = 'black'
     board[3][4] = 'white'
     board[4][3] = 'white'
     board[4][4] = 'black'
 
 # 开局时建立新棋盘
-
 def getNewBoard():
     board = []
     for i in range(8):
@@ -228,7 +227,6 @@ def getNewBoard():
     return board
 
 # 是否是合法走法，返回false或者此走法能够被翻转的棋子位置
-
 def isValidMove(board, tile, xstart, ystart):
     # 如果该位置已经有棋子或者出界了，返回False
     if not isOnBoard(xstart, ystart) or board[xstart][ystart] != 'none':
@@ -294,6 +292,7 @@ def getValidMoves(board, tile):
 def getEvaluationOfBoard(board):
     BoardBlack = np.zeros((8,8))
     BoardWhite = np.zeros((8,8))
+	# 棋盘估值表
     Vmap = np.array([[500, -25, 10, 5, 5, 10, -25, 500], [-25, -45, 1, 1, 1, 1, -45, -25], [10, 1, 3, 2, 2, 3, 1, 10],
                      [5, 1, 2, 1, 1, 2, 1, 5], [5, 1, 2, 1, 1, 2, 1, 5], [10, 1, 3, 2, 2, 3, 1, 10],
                      [-25, -45, 1, 1, 1, 1, -45, -25], [500, -25, 10, 5, 5, 10, -25, 500]])
@@ -476,10 +475,10 @@ else:
 print(turn)
 
 # 设置窗口界面
-
 windowSurface = pygame.display.set_mode((boardRect.width, boardRect.height+100))
 pygame.display.set_caption('黑白棋')
 gameOver = False
+
 # 游戏主循环
 validMoves = [[2,4],[3,5],[4,2],[5,3]]
 current_depth = 0
@@ -519,7 +518,6 @@ while True:
         drawGameOver(mainBoard)
 
     #刷新显示与计时
-
     pygame.display.update()
 
     mainClock.tick(FPS)
